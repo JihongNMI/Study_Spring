@@ -4,3 +4,4 @@
 4. MemberController.자바에 @GetMapping("/join") 부분, @PostMapping("/join") 부분 추가
 5. MemberMapper.자바에 MemberVO findById(String id); 1줄, void insertMember(MemberVO vo); 1줄 추가(메소드용)
 6. MemberMapper.엑셈엘에 mybatis용 sql쿼리 추가
+> regidate를 생략해서 sql의 default가 되게끔 함
