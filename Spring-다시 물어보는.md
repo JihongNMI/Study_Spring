@@ -187,3 +187,143 @@ public class MyController {
 👉 **“각 어노테이션을 언제 붙이면 틀리는지”**
 👉 **“이거 붙이면 왜 동작이 이상해지는지”**
 같은 실전 감각 정리도 해줄게.
+
+# 그럼 @Getmapping을 예로 들면, 이 건 사실 무슨 코드가 스프링 내부에 짜져있는건가?
+
+와… 이 질문 나오면 **이제 감으로 쓰는 단계는 끝**이야.
+이건 “어노테이션 = 마법”에서 **“어노테이션 = 내부 코드의 스위치”**로 넘어가는 질문이거든.
+
+결론부터 말하면 👇
+
+> `@GetMapping`은
+> **스프링 내부에 이미 짜여 있는 ‘요청 라우팅 등록 코드’를 실행시키는 트리거**야.
+
+---
+
+## 1️⃣ 진짜 정체부터 까보자
+
+```java
+@GetMapping("/hello")
+```
+
+이건 사실 **단독 어노테이션이 아님**.
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@RequestMapping(method = RequestMethod.GET)
+public @interface GetMapping {
+    String[] value() default {};
+}
+```
+
+👉 즉,
+
+> **`@GetMapping` = `@RequestMapping(method = GET)` 설탕 코팅 버전**
+
+---
+
+## 2️⃣ 그럼 이 어노테이션을 “누가” 읽는가?
+
+👉 **Spring MVC 내부의 이 녀석**이 읽음:
+
+```
+RequestMappingHandlerMapping
+```
+
+이름부터 직관적이지?
+👉 “요청(Request)을 메서드(Handler)에 매핑한다”
+
+---
+
+## 3️⃣ 스프링이 실제로 하는 일 (순서 중요)
+
+### 🔹 1. 앱 시작할 때
+
+스프링이 모든 빈을 쭉 훑으면서 말함:
+
+> “@Controller / @RestController 붙은 애들 다 나와”
+
+---
+
+### 🔹 2. 그 안의 메서드를 또 훑음
+
+그리고 메서드마다:
+
+* `@RequestMapping`
+* `@GetMapping`
+* `@PostMapping`
+
+이 붙어 있는지 검사함
+
+---
+
+### 🔹 3. 발견하면 내부 맵에 등록함
+
+개념적으로 이런 코드가 **스프링 내부에 이미 있음**:
+
+```java
+map.put(
+  (GET, "/hello"),
+  HelloController::hello
+);
+```
+
+👉 이 작업을 **앱 시작 시점에 미리** 다 해둠
+👉 런타임에 매번 찾는 거 아님 (성능 포인트)
+
+---
+
+## 4️⃣ 그럼 실제 요청이 오면?
+
+브라우저 → `GET /hello`
+
+스프링 내부에서:
+
+```java
+HandlerMethod method = map.get(GET, "/hello");
+method.invoke(controllerInstance);
+```
+
+이게 끝임.
+
+👉 네가 쓴 `@GetMapping` 한 줄은
+👉 **이 map에 한 줄 추가해달라는 요청서**
+
+---
+
+## 5️⃣ 그래서 “안 써도 되냐?”가 왜 안 되냐면
+
+`@GetMapping`이 없으면?
+
+* 등록 단계에서 **아예 map에 안 들어감**
+* 요청 와도 찾을 수 있는 handler가 없음
+* 결과: **404**
+
+---
+
+## 6️⃣ 이걸 한 문장으로 번역하면
+
+> `@GetMapping`은
+> **“이 메서드를 URL 요청 테이블에 등록해라”** 라는 선언문이고
+>
+> 그 선언을 해석해서
+> **실제 라우팅 코드를 실행하는 건 스프링 내부 코드**다.
+
+---
+
+## 7️⃣ 진짜 고수 관점 한 줄
+
+> 어노테이션은 “기능”이 아니라
+> **“스프링이 미리 짜둔 로직을 언제 적용할지 알려주는 메타데이터”다.
+
+---
+
+다음으로 자연스럽게 이어지는 질문은 보통 이거야 👇
+
+* ❓ “그럼 이 map은 언제 만들어지고, 어디에 저장돼?”
+* ❓ “@PostMapping이랑 @GetMapping은 실제로 뭐가 다르지?”
+* ❓ “내가 커스텀 어노테이션 만들어도 되나?”
+
+어디까지 파볼까?
+
