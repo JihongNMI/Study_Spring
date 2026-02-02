@@ -21,6 +21,9 @@ public class Main {
 ```
 
 빈
+@Component가 기본이고, 그 외에는 이름만 다르고 모두 @Component의 기능
+
+
 ```
 // 1. 클래스 정의 (스프링에게 관리를 맡김)
 @Component // <-- "스프링아, 이 클래스 네가 'new'해서 빈으로 가지고 있어!"
@@ -31,7 +34,7 @@ public class MyService {
 }
 
 // 2. 클래스 사용 (스프링 컨테이너 안에서 실행)
-@Service // 설명을 돕기 위한 예시 클래스
+@Service // <-- "스프링아, 이 MyController 클래스 네가 'new'해서 빈으로 가지고 있어! 근데 이건 비즈니스 로직이야" (원랜 @Controller지만 뭐 그렇다고 해둘까?)
 public class MyController {
 
     // [중요] 내가 직접 'new' 하지 않음! 
